@@ -24,10 +24,14 @@ class AttachmentsController < ApplicationController
   # POST /attachments
   # POST /attachments.json
   def create
+
     file_path = Rails.root.join("public", "baboon.png")
+    tmp_path = file_to_temp(file_path)
     filestack_service(key: "",
                       secret: "")
-    filelink = upload(file_path)
+
+    logger.debug("Temp file path: #{tmp_path}")
+    filelink = upload(tmp_path)
 
     @attachment = Attachment.new(attachment_params)
     @attachment.handle = filelink.handle
@@ -87,7 +91,7 @@ class AttachmentsController < ApplicationController
     end
 
     def upload(path)
-      @client.upload(filepath: path, multipart: false)
+      @client.upload(filepath: path, multipart: true)
     end
 
     def delete(handle)
@@ -107,5 +111,18 @@ class AttachmentsController < ApplicationController
 
     def remote_url(handle)
       remote_attachment(handle).url
+    end
+
+    def file_to_temp(path)
+      tmpfile = Tempfile.new("baboon.png")
+      logger.debug(tmpfile.path)
+
+      tmpfile.open do |f|
+        content = File.open(path).read
+        f.write content
+        f.flush
+      end
+
+      tmpfile.path
     end
 end
